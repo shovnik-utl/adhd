@@ -22,7 +22,6 @@
 #include <zephyr/bluetooth/uuid.h>
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/services/bas.h>
-#include <zephyr/bluetooth/services/hrs.h>
 #include <zephyr/bluetooth/services/ias.h>
 
 #include "cts.h"
@@ -30,7 +29,6 @@
 static const struct bt_data ad[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
 	BT_DATA_BYTES(BT_DATA_UUID16_ALL,
-		      BT_UUID_16_ENCODE(BT_UUID_HRS_VAL),
 		      BT_UUID_16_ENCODE(BT_UUID_BAS_VAL),
 		      BT_UUID_16_ENCODE(BT_UUID_CTS_VAL))
 };
@@ -142,19 +140,6 @@ static void bas_notify(void)
 	bt_bas_set_battery_level(battery_level);
 }
 
-static void hrs_notify(void)
-{
-	static uint8_t heartrate = 90U;
-
-	/* Heartrate measurements simulation */
-	heartrate++;
-	if (heartrate == 160U) {
-		heartrate = 90U;
-	}
-
-	bt_hrs_notify(heartrate);
-}
-
 int main(void)
 {
 	int err;
@@ -178,9 +163,6 @@ int main(void)
 
 		/* Current Time Service updates only when time is changed */
 		cts_notify();
-
-		/* Heartrate measurements simulation */
-		hrs_notify();
 
 		/* Battery level simulation */
 		bas_notify();
