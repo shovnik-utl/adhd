@@ -23,12 +23,14 @@
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/services/bas.h>
 
+/* BLE advertisement params (for GAP). */
 static const struct bt_data ad[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
 	BT_DATA_BYTES(BT_DATA_UUID16_ALL,
 		      BT_UUID_16_ENCODE(BT_UUID_BAS_VAL))
 };
 
+/* GATT callbacks for direct interfacing with GATT. */
 void mtu_updated(struct bt_conn *conn, uint16_t tx, uint16_t rx)
 {
 	printk("Updated MTU: TX: %d RX: %d bytes\n", tx, rx);
@@ -38,6 +40,7 @@ static struct bt_gatt_cb gatt_callbacks = {
 	.att_mtu_updated = mtu_updated
 };
 
+/* Callbacks for connection status (for GAP). */
 static void connected(struct bt_conn *conn, uint8_t err)
 {
 	if (err) {
@@ -57,25 +60,7 @@ BT_CONN_CB_DEFINE(conn_callbacks) = {
 	.disconnected = disconnected,
 };
 
-static void bt_ready(void)
-{
-	int err;
-
-	printk("Bluetooth initialized\n");
-
-	if (IS_ENABLED(CONFIG_SETTINGS)) {
-		settings_load();
-	}
-
-	err = bt_le_adv_start(BT_LE_ADV_CONN_NAME, ad, ARRAY_SIZE(ad), NULL, 0);
-	if (err) {
-		printk("Advertising failed to start (err %d)\n", err);
-		return;
-	}
-
-	printk("Advertising successfully started\n");
-}
-
+/* Callbacks for pairing (SMP). */
 static void auth_passkey_display(struct bt_conn *conn, unsigned int passkey)
 {
 	char addr[BT_ADDR_LE_STR_LEN];
@@ -100,12 +85,41 @@ static struct bt_conn_auth_cb auth_cb_display = {
 	.cancel = auth_cancel,
 };
 
+/* Initialize the BLE stack and start advertising. */
+static void bt_ready(void)
+{
+	int err = bt_enable(NULL);
+	if (err) {
+		printk("Bluetooth init failed (err %d)\n", err);
+		return 0;
+	}
+	printk("Bluetooth initialized\n");
+
+	if (IS_ENABLED(CONFIG_SETTINGS)) {
+		settings_load();
+	}
+
+	err = bt_le_adv_start(BT_LE_ADV_CONN_NAME, ad, ARRAY_SIZE(ad), NULL, 0);
+	if (err) {
+		printk("Advertising failed to start (err %d)\n", err);
+		return;
+	}
+
+	printk("Advertising successfully started\n");
+}
+
+/* Notify the client about battery level via BAS (Battery Service). */
 static void bas_notify(void)
 {
 	uint8_t battery_level = bt_bas_get_battery_level();
 
+	/* Fake battery status, ie a simulation: decrement from 100 down to 0 and reset. 
+	   In actual practice, you would have some kind of a battery_measure()
+	   function call here which queries your battery status by reading an ADC
+	   and doing calculations with reference to your battery's discharge curve!
+	   Refer to https://developer.nordicsemi.com/nRF_Connect_SDK/doc/2.4.0/nrf/applications/nrf_desktop/doc/battery_meas.html
+	*/
 	battery_level--;
-
 	if (!battery_level) {
 		battery_level = 100U;
 	}
@@ -115,26 +129,16 @@ static void bas_notify(void)
 
 int main(void)
 {
-	int err;
-
-	err = bt_enable(NULL);
-	if (err) {
-		printk("Bluetooth init failed (err %d)\n", err);
-		return 0;
-	}
-
+	/* Run BLE initialization routines. */
 	bt_ready();
 
+	/* Register GATT and SMP callbacks. */
 	bt_gatt_cb_register(&gatt_callbacks);
 	bt_conn_auth_cb_register(&auth_cb_display);
 
-	/* Implement notification. At the moment there is no suitable way
-	 * of starting delayed work so we do it here
-	 */
+	/* Every 1 second, update battery status on the GATT server via BAS. */
 	while (1) {
 		k_sleep(K_SECONDS(1));
-
-		/* Battery level simulation */
 		bas_notify();
 	}
 	return 0;
