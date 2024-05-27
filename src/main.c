@@ -41,6 +41,7 @@ static void connected(struct bt_conn *conn, uint8_t err)
 static void disconnected(struct bt_conn *conn, uint8_t reason)
 {
 	printk("Disconnected (reason 0x%02x)\n", reason);
+	bt_unpair(BT_ID_DEFAULT, BT_ADDR_LE_ANY); /* Clear pairing info for next time pairing. */
 }
 
 BT_CONN_CB_DEFINE(conn_callbacks) = {
@@ -49,15 +50,6 @@ BT_CONN_CB_DEFINE(conn_callbacks) = {
 };
 
 /* Callbacks for pairing (SMP). */
-static void auth_passkey_display(struct bt_conn *conn, unsigned int passkey)
-{
-	char addr[BT_ADDR_LE_STR_LEN];
-
-	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-
-	printk("Passkey for %s: %06u\n", addr, passkey);
-}
-
 static void auth_cancel(struct bt_conn *conn)
 {
 	char addr[BT_ADDR_LE_STR_LEN];
@@ -68,9 +60,10 @@ static void auth_cancel(struct bt_conn *conn)
 }
 
 static struct bt_conn_auth_cb auth_cb_display = {
-	.passkey_display = auth_passkey_display,
+	.passkey_display = NULL,
 	.passkey_entry = NULL,
 	.cancel = auth_cancel,
+	.passkey_confirm = NULL
 };
 
 /* Initialize the BLE stack and start advertising. */
@@ -79,7 +72,7 @@ static void bt_ready(void)
 	int err = bt_enable(NULL);
 	if (err) {
 		printk("Bluetooth init failed (err %d)\n", err);
-		return 0;
+		return;
 	}
 	printk("Bluetooth initialized\n");
 
