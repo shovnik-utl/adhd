@@ -17,10 +17,8 @@
 #include <zephyr/settings/settings.h>
 
 #include <zephyr/bluetooth/bluetooth.h>
-#include <zephyr/bluetooth/hci.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/uuid.h>
-#include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/services/bas.h>
 
 /* BLE advertisement params (for GAP). */
@@ -28,16 +26,6 @@ static const struct bt_data ad[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
 	BT_DATA_BYTES(BT_DATA_UUID16_ALL,
 		      BT_UUID_16_ENCODE(BT_UUID_BAS_VAL))
-};
-
-/* GATT callbacks for direct interfacing with GATT. */
-void mtu_updated(struct bt_conn *conn, uint16_t tx, uint16_t rx)
-{
-	printk("Updated MTU: TX: %d RX: %d bytes\n", tx, rx);
-}
-
-static struct bt_gatt_cb gatt_callbacks = {
-	.att_mtu_updated = mtu_updated
 };
 
 /* Callbacks for connection status (for GAP). */
@@ -132,8 +120,7 @@ int main(void)
 	/* Run BLE initialization routines. */
 	bt_ready();
 
-	/* Register GATT and SMP callbacks. */
-	bt_gatt_cb_register(&gatt_callbacks);
+	/* Register SMP callbacks for pairing. */
 	bt_conn_auth_cb_register(&auth_cb_display);
 
 	/* Every 1 second, update battery status on the GATT server via BAS. */
