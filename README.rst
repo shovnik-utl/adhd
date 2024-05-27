@@ -1,25 +1,17 @@
-.. _ble_peripheral:
-
-Bluetooth: Peripheral
-#####################
+Bluetooth Battery Service (BAS) Demo
+####################################
 
 Overview
 ********
 
-Application demonstrating the BLE Peripheral role. It has several well-known and
-vendor-specific GATT services that it exposes.
-
+Application demonstrating the BLE Battery GATT service with SMP Just Works
+pairing.
 
 Requirements
 ************
-
-* BlueZ running on the host, or
-* A board with BLE support
+* A nordic board (I am using an nRF52840 DK)
 
 Building and Running
 ********************
 
-This sample can be found under :zephyr_file:`samples/bluetooth/peripheral` in the
-Zephyr tree.
-
-See :ref:`bluetooth samples section <bluetooth-samples>` for details.
+Build and flash as per usual using west (or the VS Code extension).

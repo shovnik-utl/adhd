@@ -1,11 +1,4 @@
-/* main.c - Application main entry point */
-
-/*
- * Copyright (c) 2015-2016 Intel Corporation
- *
- * SPDX-License-Identifier: Apache-2.0
- */
-
+/* Demo BLE Battery GATT Service. */
 #include <zephyr/types.h>
 #include <stddef.h>
 #include <string.h>
