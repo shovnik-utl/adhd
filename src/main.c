@@ -22,7 +22,6 @@
 #include <zephyr/bluetooth/uuid.h>
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/services/bas.h>
-#include <zephyr/bluetooth/services/ias.h>
 
 #include "cts.h"
 
@@ -56,30 +55,9 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	printk("Disconnected (reason 0x%02x)\n", reason);
 }
 
-static void alert_stop(void)
-{
-	printk("Alert stopped\n");
-}
-
-static void alert_start(void)
-{
-	printk("Mild alert started\n");
-}
-
-static void alert_high_start(void)
-{
-	printk("High alert started\n");
-}
-
 BT_CONN_CB_DEFINE(conn_callbacks) = {
 	.connected = connected,
 	.disconnected = disconnected,
-};
-
-BT_IAS_CB_DEFINE(ias_callbacks) = {
-	.no_alert = alert_stop,
-	.mild_alert = alert_start,
-	.high_alert = alert_high_start,
 };
 
 static void bt_ready(void)
