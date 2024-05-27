@@ -23,13 +23,10 @@
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/services/bas.h>
 
-#include "cts.h"
-
 static const struct bt_data ad[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
 	BT_DATA_BYTES(BT_DATA_UUID16_ALL,
-		      BT_UUID_16_ENCODE(BT_UUID_BAS_VAL),
-		      BT_UUID_16_ENCODE(BT_UUID_CTS_VAL))
+		      BT_UUID_16_ENCODE(BT_UUID_BAS_VAL))
 };
 
 void mtu_updated(struct bt_conn *conn, uint16_t tx, uint16_t rx)
@@ -65,8 +62,6 @@ static void bt_ready(void)
 	int err;
 
 	printk("Bluetooth initialized\n");
-
-	cts_init();
 
 	if (IS_ENABLED(CONFIG_SETTINGS)) {
 		settings_load();
@@ -138,9 +133,6 @@ int main(void)
 	 */
 	while (1) {
 		k_sleep(K_SECONDS(1));
-
-		/* Current Time Service updates only when time is changed */
-		cts_notify();
 
 		/* Battery level simulation */
 		bas_notify();
