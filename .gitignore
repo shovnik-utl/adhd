@@ -1,6 +1,10 @@
 # editors
 *.swp
 *~
+.vscode/settings.json
 
 # build
 /build*/
+
+# pictures, video and such
+/resources/
