@@ -91,7 +91,7 @@ static void bas_notify(void)
 	   In actual practice, you would have some kind of a battery_measure()
 	   function call here which queries your battery status by reading an ADC
 	   and doing calculations with reference to your battery's discharge curve!
-	   Refer to https://developer.nordicsemi.com/nRF_Connect_SDK/doc/2.4.0/nrf/applications/nrf_desktop/doc/battery_meas.html
+	   Refer to https://github.com/zephyrproject-rtos/zephyr/tree/main/samples/boards/nrf/battery
 	*/
 	battery_level--;
 	if (!battery_level) {
