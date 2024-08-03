@@ -16,6 +16,9 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(adhd_main, LOG_LEVEL_DBG);
 
+/* Constants. */
+static const k_timeout_t BAS_UPDATE_INTERVAL = K_SECONDS(10);
+
 /* BLE advertisement params (for GAP). */
 static const struct bt_data ad[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
@@ -112,9 +115,10 @@ int main(void)
 	/* Register SMP callbacks for pairing. */
 	bt_conn_auth_cb_register(&auth_cb_display);
 
-	/* Every 1 second, update battery status on the GATT server via BAS. */
-	while (1) {
-		k_sleep(K_SECONDS(1));
+	/* Periodically update battery status on the GATT server via BAS. */
+	while (true)
+	{
+		k_sleep(BAS_UPDATE_INTERVAL);
 		bas_notify();
 	}
 	return 0;
