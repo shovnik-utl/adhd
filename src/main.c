@@ -3,16 +3,18 @@
 #include <stddef.h>
 #include <string.h>
 #include <errno.h>
-#include <zephyr/sys/printk.h>
+
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/kernel.h>
-
 #include <zephyr/settings/settings.h>
 
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/uuid.h>
 #include <zephyr/bluetooth/services/bas.h>
+
+#include <zephyr/logging/log.h>
+LOG_MODULE_REGISTER(adhd_main, LOG_LEVEL_DBG);
 
 /* BLE advertisement params (for GAP). */
 static const struct bt_data ad[] = {
@@ -21,19 +23,20 @@ static const struct bt_data ad[] = {
 		      BT_UUID_16_ENCODE(BT_UUID_BAS_VAL))
 };
 
-/* Callbacks for connection status (for GAP). */
+/* Callbacks for connection/disconnection status (GAP). */
 static void connected(struct bt_conn *conn, uint8_t err)
 {
 	if (err) {
-		printk("Connection failed (err 0x%02x)\n", err);
-	} else {
-		printk("Connected\n");
+		LOG_INF("Connection failed (err 0x%02x).", err);
+	}
+	else {
+		LOG_INF("Connected.");
 	}
 }
 
 static void disconnected(struct bt_conn *conn, uint8_t reason)
 {
-	printk("Disconnected (reason 0x%02x)\n", reason);
+	LOG_INF("Disconnected (reason 0x%02x).", reason);
 	bt_unpair(BT_ID_DEFAULT, BT_ADDR_LE_ANY); /* Clear pairing info for next time pairing. */
 }
 
@@ -49,7 +52,7 @@ static void auth_cancel(struct bt_conn *conn)
 
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
-	printk("Pairing cancelled: %s\n", addr);
+	LOG_INF("Pairing cancelled: %s", addr);
 }
 
 static struct bt_conn_auth_cb auth_cb_display = {
@@ -64,10 +67,10 @@ static void bt_ready(void)
 {
 	int err = bt_enable(NULL);
 	if (err) {
-		printk("Bluetooth init failed (err %d)\n", err);
+		LOG_INF("Bluetooth init failed (err %d).", err);
 		return;
 	}
-	printk("Bluetooth initialized\n");
+	LOG_INF("Bluetooth initialized.");
 
 	if (IS_ENABLED(CONFIG_SETTINGS)) {
 		settings_load();
@@ -75,11 +78,11 @@ static void bt_ready(void)
 
 	err = bt_le_adv_start(BT_LE_ADV_CONN_NAME, ad, ARRAY_SIZE(ad), NULL, 0);
 	if (err) {
-		printk("Advertising failed to start (err %d)\n", err);
+		LOG_INF("Advertising failed to start (err %d).", err);
 		return;
 	}
 
-	printk("Advertising successfully started\n");
+	LOG_INF("Advertising successfully started.");
 }
 
 /* Notify the client about battery level via BAS (Battery Service). */
