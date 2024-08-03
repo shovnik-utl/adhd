@@ -16,6 +16,8 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(adhd_main, LOG_LEVEL_DBG);
 
+#include "app_version.h"
+
 /* Constants. */
 static const k_timeout_t BAS_UPDATE_INTERVAL = K_SECONDS(10);
 
@@ -65,27 +67,43 @@ static struct bt_conn_auth_cb auth_cb_display = {
 	.passkey_confirm = NULL
 };
 
-/* Initialize the BLE stack and start advertising. */
-static void bt_ready(void)
+/* Runtime settings override. */
+static void settings_runtime_load(void)
 {
+#if defined(CONFIG_BT_DIS_FW_REV)
+	settings_runtime_set("bt/dis/fw", APP_VERSION_STRING, sizeof(APP_VERSION_STRING));
+#endif
+}
+
+/* Initialize the BLE stack and start advertising. */
+static int bt_ready(void)
+{
+	/* Register SMP callbacks for pairing. */
+	bt_conn_auth_cb_register(&auth_cb_display);
+
+	/* Initialize BLE stack and signal ready when done. */
 	int err = bt_enable(NULL);
 	if (err) {
 		LOG_INF("Bluetooth init failed (err %d).", err);
-		return;
+		return 1;
 	}
 	LOG_INF("Bluetooth initialized.");
 
+	/* Load BLE settings. */
 	if (IS_ENABLED(CONFIG_SETTINGS)) {
 		settings_load();
 	}
+	settings_runtime_load();
 
+	/* Start BLE advertising. */
 	err = bt_le_adv_start(BT_LE_ADV_CONN_NAME, ad, ARRAY_SIZE(ad), NULL, 0);
 	if (err) {
 		LOG_INF("Advertising failed to start (err %d).", err);
-		return;
+		return 2;
 	}
-
 	LOG_INF("Advertising successfully started.");
+	
+	return 0; 
 }
 
 /* Notify the client about battery level via BAS (Battery Service). */
@@ -110,14 +128,11 @@ static void bas_notify(void)
 int main(void)
 {
 	/* Run BLE initialization routines. */
-	bt_ready();
-
-	/* Register SMP callbacks for pairing. */
-	bt_conn_auth_cb_register(&auth_cb_display);
+	if (bt_ready())
+		return 1;
 
 	/* Periodically update battery status on the GATT server via BAS. */
-	while (true)
-	{
+	while (true) {
 		k_sleep(BAS_UPDATE_INTERVAL);
 		bas_notify();
 	}
