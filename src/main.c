@@ -11,15 +11,15 @@
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/uuid.h>
-#include <zephyr/bluetooth/services/bas.h>
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(adhd_main, LOG_LEVEL_DBG);
 
 #include "app_version.h"
+#include "battery.h"
 
-/* Constants. */
-static const k_timeout_t BAS_UPDATE_INTERVAL = K_SECONDS(10);
+/* Battery service periodic update interval. */
+static const k_timeout_t BAS_UPDATE_INTERVAL = K_SECONDS(1);
 
 /* BLE advertisement params (for GAP). */
 static const struct bt_data ad[] = {
@@ -106,35 +106,19 @@ static int bt_ready(void)
 	return 0; 
 }
 
-/* Notify the client about battery level via BAS (Battery Service). */
-static void bas_notify(void)
-{
-	uint8_t battery_level = bt_bas_get_battery_level();
-
-	/* Fake battery status, ie a simulation: decrement from 100 down to 0 and reset. 
-	   In actual practice, you would have some kind of a battery_measure()
-	   function call here which queries your battery status by reading an ADC
-	   and doing calculations with reference to your battery's discharge curve!
-	   Refer to https://github.com/zephyrproject-rtos/zephyr/tree/main/samples/boards/nrf/battery
-	*/
-	battery_level--;
-	if (!battery_level) {
-		battery_level = 100U;
-	}
-
-	bt_bas_set_battery_level(battery_level);
-}
-
 int main(void)
 {
 	/* Run BLE initialization routines. */
 	if (bt_ready())
 		return 1;
 
-	/* Periodically update battery status on the GATT server via BAS. */
-	while (true) {
-		k_sleep(BAS_UPDATE_INTERVAL);
-		bas_notify();
+	/* Start periodic battery service function. */
+	bas_start(BAS_UPDATE_INTERVAL);
+
+	/* Application super loop. */
+	while (true)
+	{
+		k_msleep(1);
 	}
 	return 0;
 }
