@@ -17,6 +17,11 @@ LOG_MODULE_REGISTER(adhd_main, LOG_LEVEL_DBG);
 
 #include "app_version.h"
 #include "battery.h"
+#include "haptics.h"
+
+/* Connection state management. */
+static volatile bool ble_connected	= false;
+static volatile bool alarm_started	= false;
 
 /* Battery service periodic update interval. */
 static const k_timeout_t BAS_UPDATE_INTERVAL = K_SECONDS(1);
@@ -35,12 +40,14 @@ static void connected(struct bt_conn *conn, uint8_t err)
 		LOG_INF("Connection failed (err 0x%02x).", err);
 	}
 	else {
+		ble_connected = true;
 		LOG_INF("Connected.");
 	}
 }
 
 static void disconnected(struct bt_conn *conn, uint8_t reason)
 {
+	ble_connected = false;
 	LOG_INF("Disconnected (reason 0x%02x).", reason);
 	bt_unpair(BT_ID_DEFAULT, BT_ADDR_LE_ANY); /* Clear pairing info for next time pairing. */
 }
@@ -108,6 +115,9 @@ static int bt_ready(void)
 
 int main(void)
 {
+	/* Initialize peripherals. */
+	gpio_init_haptics();
+
 	/* Run BLE initialization routines. */
 	if (bt_ready())
 		return 1;
@@ -118,7 +128,16 @@ int main(void)
 	/* Application super loop. */
 	while (true)
 	{
-		k_msleep(1);
+		if (!ble_connected && !alarm_started) {
+			alarm_started = true;
+			haptic_response(alarm_started);
+			
+		}
+		else if (alarm_started && ble_connected) {
+			alarm_started = false;
+			haptic_response(alarm_started);
+		}
+		k_msleep(10);
 	}
 	return 0;
 }

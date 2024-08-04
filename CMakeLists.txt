@@ -8,4 +8,5 @@ project(adhd)
 target_sources(app PRIVATE
   src/main.c
   src/battery.c
+  src/haptics.c
 )

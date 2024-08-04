@@ -1,0 +1,9 @@
+/ {
+	haptics { /* Transistor gated motor for haptic response to button presses. */
+		compatible = "gpio-leds";
+		vibm: vibration_motor {
+			gpios = <&gpio0 02 GPIO_ACTIVE_HIGH>; /* P0.02 */
+			label = "Vibration Motor";
+		};
+	};
+};
